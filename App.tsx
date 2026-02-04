@@ -63,27 +63,36 @@ const App: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const syncUserData = (next: UserData) => {
+    if (!next.profile?.email) return;
+    void apiService.syncUserData(next);
+  };
+
   const shouldShowAuth =
     !userData.isAuthenticated || !userData.onboardingComplete || !userData.profile;
 
   if (shouldShowAuth) {
     return (
       <AuthPage
-        onLogin={(p) =>
-          setUserData({
+        onLogin={(p) => {
+          const next = {
             ...userData,
             profile: p as UserProfile,
             isAuthenticated: true
-          })
-        }
-        onCompleteOnboarding={(p) =>
-          setUserData({
+          };
+          setUserData(next);
+          syncUserData(next);
+        }}
+        onCompleteOnboarding={(p) => {
+          const next = {
             ...userData,
             profile: p,
             isAuthenticated: true,
             onboardingComplete: true
-          })
-        }
+          };
+          setUserData(next);
+          syncUserData(next);
+        }}
         initialStep={!userData.isAuthenticated ? 'login' : 'onboarding'}
       />
     );

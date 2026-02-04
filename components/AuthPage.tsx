@@ -1,6 +1,6 @@
 
-import React, { useState, useRef, useMemo } from 'react';
-import { HeartHandshake, LogIn, ArrowRight, User, Globe, Calendar, ChevronDown, UserCircle2, Camera, Check, Upload } from 'lucide-react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { HeartHandshake, ArrowRight, User, Globe, Calendar, ChevronDown, UserCircle2, Camera, Check, Upload } from 'lucide-react';
 import { UserProfile } from '../types';
 
 interface AuthPageProps {
@@ -31,13 +31,8 @@ const COUNTRIES_WITH_FLAGS = [
 ];
 
 const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, initialStep }) => {
-  const [step, setStep] = useState<'login' | 'onboarding'>(initialStep);
   const [nameInput, setNameInput] = useState('');
-  const [profile, setProfile] = useState<Partial<UserProfile>>({
-    name: '',
-    email: 'user@example.com',
-    photoUrl: ''
-  });
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const [formData, setFormData] = useState({
     dob: '',
@@ -57,34 +52,31 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
     );
   }, [formData.nationality]);
 
-  const handleGoogleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!selectedPhoto && presetAvatars.length > 0) {
+      setSelectedPhoto(presetAvatars[0]);
+    }
+  }, [presetAvatars, selectedPhoto]);
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nameInput.trim()) return;
+    const safeName = nameInput.trim();
+    if (!safeName) return;
 
-    const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${nameInput}&backgroundColor=eff6ff`;
-    const newProfile = {
-      name: nameInput,
-      email: `${nameInput.toLowerCase().replace(/\s/g, '.')}@example.com`,
-      photoUrl: defaultAvatar
-    };
-
-    setProfile(newProfile);
-    setSelectedPhoto(defaultAvatar);
-    
-    setTimeout(() => {
-      onLogin(newProfile);
-      setStep('onboarding');
-    }, 600);
-  };
-
-  const handleOnboardingSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
     if (formData.dob && formData.gender && formData.nationality) {
-      onCompleteOnboarding({
-        ...profile,
-        ...formData,
-        photoUrl: selectedPhoto || profile.photoUrl
-      } as UserProfile);
+      setSaveStatus('saving');
+      const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(safeName)}&backgroundColor=eff6ff`;
+      const email = `${safeName.toLowerCase().replace(/\s+/g, '.')}@example.com`;
+      const fullProfile: UserProfile = {
+        name: safeName,
+        email,
+        dob: formData.dob,
+        gender: formData.gender,
+        nationality: formData.nationality,
+        photoUrl: selectedPhoto || defaultAvatar
+      };
+      onCompleteOnboarding(fullProfile);
+      setTimeout(() => setSaveStatus('saved'), 800);
     }
   };
 
@@ -105,21 +97,29 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
     setIsCustomUpload(false);
   };
 
-  if (step === 'login') {
-    return (
-      <div className="min-h-screen calm-gradient flex items-center justify-center p-6 text-slate-900 transition-theme">
-        <div className="bg-white w-full max-w-md p-10 rounded-[48px] shadow-2xl shadow-blue-100 text-center space-y-8 animate-in fade-in zoom-in duration-500 border border-white/40">
-          <div className="flex justify-center">
-            <div className="w-20 h-20 bg-[var(--primary)] rounded-3xl flex items-center justify-center shadow-xl shadow-blue-200 transition-theme">
-              <HeartHandshake className="w-10 h-10 text-white" />
+  const isFormComplete = Boolean(
+    nameInput.trim() && formData.dob && formData.gender && formData.nationality
+  );
+  const firstName = nameInput.trim().split(' ')[0];
+  const isSaving = saveStatus === 'saving';
+
+  return (
+    <div className="min-h-screen calm-gradient flex items-center justify-center p-6 text-slate-900 transition-theme">
+      <div className="bg-white w-full max-w-lg p-10 rounded-[48px] shadow-2xl shadow-blue-100 animate-in fade-in zoom-in duration-500 border border-white/40">
+        <div className="space-y-8">
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-[var(--primary)] rounded-3xl flex items-center justify-center shadow-xl shadow-blue-200 transition-theme">
+                <HeartHandshake className="w-8 h-8 text-white" />
+              </div>
             </div>
+            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Personalize Your Profile</h2>
+            <p className="text-slate-500 mt-2">
+              Tailoring our AI support for you{firstName ? `, ${firstName}` : ''}.
+            </p>
           </div>
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Welcome to MindEase</h1>
-            <p className="text-slate-500 mt-2 leading-relaxed">Your personalized sanctuary for emotional growth and mental wellness.</p>
-          </div>
-          
-          <form onSubmit={handleGoogleLogin} className="space-y-6">
+
+          <form onSubmit={handleSubmit} className="space-y-8">
             <div className="space-y-2 text-left">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Your Full Name</label>
               <div className="relative">
@@ -134,47 +134,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
                 />
               </div>
             </div>
-
-            <button
-              type="submit"
-              disabled={!nameInput.trim()}
-              className="w-full flex items-center justify-center gap-4 py-4 bg-white border-2 border-slate-100 hover:border-[var(--primary)] hover:bg-[var(--primary-light)] rounded-3xl transition-all font-bold text-slate-700 shadow-sm group active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
-              Sign in with Google
-            </button>
-          </form>
-          
-          <div className="pt-4">
-            <p className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black">
-              Private & Secure • HIPAA Compliant Design
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen calm-gradient flex items-center justify-center p-6 text-slate-900 transition-theme">
-      <div className="bg-white w-full max-w-lg p-10 rounded-[48px] shadow-2xl shadow-blue-100 animate-in slide-in-from-bottom duration-500 border border-white/40">
-        <div className="space-y-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Personalize Your Profile</h2>
-            <p className="text-slate-500 mt-2">Tailoring our AI support for you, {profile.name?.split(' ')[0]}.</p>
-          </div>
-
-          <form onSubmit={handleOnboardingSubmit} className="space-y-8">
-            {/* Avatar Selection Section */}
             <div className="space-y-4">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 block text-center">Customize Your Avatar</label>
-              
+
               <div className="flex flex-col items-center gap-6">
-                {/* Main Preview */}
                 <div className="relative group">
                   <div className="w-32 h-32 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-slate-50 relative ring-4 ring-[var(--primary-light)] transition-all hover:ring-8">
                     <img src={selectedPhoto} alt="Selected profile" className="w-full h-full object-cover" />
-                    <button 
+                    <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
@@ -223,10 +190,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
                       <span className="text-[8px] font-bold mt-1 uppercase">Own DP</span>
                     </button>
                   </div>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
                     accept="image/*"
                     onChange={handleFileUpload}
                   />
@@ -292,11 +259,27 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-3 py-5 bg-[var(--primary)] text-white rounded-[24px] font-black shadow-xl shadow-blue-100 hover:opacity-90 hover:shadow-2xl transition-all active:scale-95 group mt-4 uppercase tracking-wider"
+              disabled={!isFormComplete || isSaving}
+              className={`w-full flex items-center justify-center gap-3 py-5 rounded-[24px] font-black shadow-xl transition-all active:scale-95 group mt-4 uppercase tracking-wider ${
+                isFormComplete && !isSaving
+                  ? 'bg-[var(--primary)] text-white shadow-blue-100 hover:opacity-90 hover:shadow-2xl'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-slate-100'
+              }`}
             >
-              Begin Journey
+              {isSaving ? 'Saving...' : 'Begin Journey'}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
+            {saveStatus === 'saving' && (
+              <div className="text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Saving your profile...
+              </div>
+            )}
+            {saveStatus === 'saved' && (
+              <div className="flex items-center justify-center gap-2 text-emerald-600 text-xs font-bold uppercase tracking-widest">
+                <Check className="w-4 h-4" />
+                Profile saved
+              </div>
+            )}
           </form>
         </div>
       </div>
