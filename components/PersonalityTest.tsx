@@ -24,7 +24,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ language, onComplete,
 
   // Defensive fallback for translations
   const langKey = translations[language] ? language : 'en';
-  const t = translations[langKey].personality;
+  const t = translations[langKey]?.personality || translations.en.personality;
 
   const LIKERT_OPTIONS = [
     { label: t.agree, score: 3, size: "w-14 h-14", color: "bg-emerald-500", hover: "hover:ring-emerald-200" },

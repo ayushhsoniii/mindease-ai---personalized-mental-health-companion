@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Sparkles, Brain, Briefcase, Heart, Shield, AlertCircle, Loader2, Zap, Target, ArrowRight, TrendingUp, Award } from 'lucide-react';
 import { UserProfile, PersonalityInsights as PersonalityInsightsData, TestResult, AppLanguage } from '../types';
 import { geminiService } from '../services/geminiService';
@@ -18,40 +18,35 @@ const PersonalityInsights: React.FC<PersonalityInsightsProps> = ({ profile, test
   const [insights, setInsights] = useState<PersonalityInsightsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [showTest, setShowTest] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const t = translations[language] || translations['en'];
   const eqResult = testResults.find(t => t.testName.includes('Emotional Intelligence') || t.testName === 'Emotional Intelligence (WLEIS)');
 
-  useEffect(() => {
-    const fetchInsights = async () => {
-      if (profile?.personalityType) {
-        setLoading(true);
-        try {
-          const data = await geminiService.getPersonalityInsights(profile.personalityType, language);
-          setInsights(data);
-        } catch (error) {
-          console.error("Failed to fetch personality insights", error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    fetchInsights();
+  const fetchInsights = useCallback(async () => {
+    if (!profile?.personalityType) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await geminiService.getPersonalityInsights(profile.personalityType, language);
+      setInsights(data);
+    } catch (error) {
+      console.error("Failed to fetch personality insights", error);
+      setInsights(null);
+      setError("Detailed insights are unavailable right now.");
+    } finally {
+      setLoading(false);
+    }
   }, [profile?.personalityType, language]);
+
+  useEffect(() => {
+    fetchInsights();
+  }, [fetchInsights]);
 
   if (showTest) {
     return (
       <div className="bg-white rounded-[48px] overflow-hidden shadow-2xl">
          <PersonalityTest language={language} onComplete={(type, desc) => { onTakeTest(type, desc); setShowTest(false); }} />
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
-        <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Generating Your Archetype Profile...</p>
       </div>
     );
   }
@@ -79,7 +74,50 @@ const PersonalityInsights: React.FC<PersonalityInsightsProps> = ({ profile, test
     );
   }
 
-  if (!insights) return null;
+  if (!insights) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="bg-white rounded-[48px] p-10 md:p-16 text-center space-y-6 shadow-sm border border-slate-100 max-w-3xl mx-auto">
+          <div className="w-24 h-24 bg-indigo-50 text-indigo-500 rounded-[32px] flex items-center justify-center mx-auto">
+            <Brain className="w-12 h-12" />
+          </div>
+          <div className="space-y-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Your Result</p>
+            <h2 className="text-4xl font-black text-slate-800 tracking-tight">
+              The {profile?.personalityType}
+            </h2>
+            <p className="text-slate-500 text-lg leading-relaxed">
+              {profile?.personalityDescription || "Here is your core personality archetype from the assessment."}
+            </p>
+          </div>
+          {loading && (
+            <div className="flex items-center justify-center gap-2 text-slate-400 text-xs font-bold uppercase tracking-widest">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Generating full insights...
+            </div>
+          )}
+          {error && !loading && (
+            <div className="flex items-center justify-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-widest">
+              <AlertCircle className="w-4 h-4" />
+              {error}
+            </div>
+          )}
+          <button
+            onClick={fetchInsights}
+            disabled={loading}
+            className={`inline-flex items-center gap-3 px-10 py-4 rounded-[24px] font-black shadow-xl transition-all active:scale-95 group ${
+              loading
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-slate-100'
+                : 'bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700'
+            }`}
+          >
+            {loading ? 'Generating...' : 'Generate Full Insights'}
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
