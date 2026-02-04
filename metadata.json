@@ -1,0 +1,7 @@
+{
+  "name": "MindEase AI - Personalized Mental Health Companion",
+  "description": "An empathetic, AI-powered mental health support system providing personalized coping resources, reflective conversations, and early risk indicators while prioritizing user safety and privacy.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
