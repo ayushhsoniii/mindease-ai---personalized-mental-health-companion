@@ -63,12 +63,30 @@ const App: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (!userData.isAuthenticated) {
-    return <AuthPage 
-      onLogin={(p) => setUserData({...userData, profile: p as UserProfile, isAuthenticated: true})} 
-      onCompleteOnboarding={(p) => setUserData({...userData, profile: p, onboardingComplete: true})} 
-      initialStep="login" 
-    />;
+  const shouldShowAuth =
+    !userData.isAuthenticated || !userData.onboardingComplete || !userData.profile;
+
+  if (shouldShowAuth) {
+    return (
+      <AuthPage
+        onLogin={(p) =>
+          setUserData({
+            ...userData,
+            profile: p as UserProfile,
+            isAuthenticated: true
+          })
+        }
+        onCompleteOnboarding={(p) =>
+          setUserData({
+            ...userData,
+            profile: p,
+            isAuthenticated: true,
+            onboardingComplete: true
+          })
+        }
+        initialStep={!userData.isAuthenticated ? 'login' : 'onboarding'}
+      />
+    );
   }
 
   const handleLanguageChange = (lang: AppLanguage) => {
@@ -250,4 +268,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
