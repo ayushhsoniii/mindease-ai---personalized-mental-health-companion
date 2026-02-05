@@ -12,6 +12,17 @@ const getAI = () => {
   return new GoogleGenAI({ apiKey: apiKey || "" });
 };
 
+const RESPONSE_STYLE_GUIDELINES: Record<ResponseStyle, string> = {
+  compassionate:
+    "Warm, validating, and gentle. Use supportive language, acknowledge feelings, and offer encouragement. Ask one brief, caring follow-up question.",
+  direct:
+    "Concise, straightforward, and action-oriented. Use short sentences or steps. Avoid excessive hedging while staying respectful.",
+  scientific:
+    "Clinical, precise, and evidence-informed. Explain mechanisms briefly, use neutral wording, and note uncertainty when relevant.",
+  reflective:
+    "Calm, thoughtful, and Socratic. Mirror the user's feelings, invite self-reflection, and ask open-ended questions rather than prescribing.",
+};
+
 export const geminiService = {
   async *streamChat(
     history: ChatMessage[],
@@ -31,6 +42,7 @@ export const geminiService = {
       Recent Test Results: ${JSON.stringify(testResults)}
       Preferred Language: ${language}
       Response Style: ${responseStyle}
+      Style Guidelines: ${RESPONSE_STYLE_GUIDELINES[responseStyle]}
       Spotify Vibe: ${spotifyVibe || 'None'}
 
       GUIDELINES:

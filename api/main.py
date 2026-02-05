@@ -150,6 +150,29 @@ def _ensure_text(value) -> str:
         return _ensure_text(content_attr)
     return str(value)
 
+STYLE_GUIDELINES = {
+    "compassionate": (
+        "Warm, validating, and gentle. Use supportive language, acknowledge feelings, "
+        "and offer encouragement. Ask one brief, caring follow-up question."
+    ),
+    "direct": (
+        "Concise, straightforward, and action-oriented. Use short sentences or steps. "
+        "Avoid excessive hedging while staying respectful."
+    ),
+    "scientific": (
+        "Clinical, precise, and evidence-informed. Explain mechanisms briefly, "
+        "use neutral wording, and note uncertainty when relevant."
+    ),
+    "reflective": (
+        "Calm, thoughtful, and Socratic. Mirror the user's feelings, invite self-reflection, "
+        "and ask open-ended questions rather than prescribing."
+    ),
+}
+
+def _get_style_guidelines(style: Optional[str]) -> str:
+    style_key = (style or "compassionate").strip().lower()
+    return STYLE_GUIDELINES.get(style_key, STYLE_GUIDELINES["compassionate"])
+
 def _load_pdf_documents() -> List[Document]:
     if not RAG_PDF_ENABLED:
         return []
@@ -303,9 +326,12 @@ async def chat_stream(request: Request):
         except Exception:
             pass
 
+    response_style = context.get("responseStyle", "compassionate")
+    style_guidelines = _get_style_guidelines(response_style)
     system_instruction = (
-        f"You are MindEase Companion, an empathetic mental health support AI. "
-        f"Your response style is {context.get('responseStyle', 'compassionate')}. "
+        "You are MindEase Companion, an empathetic mental health support AI. "
+        f"Response style: {response_style}. "
+        f"Style guidelines: {style_guidelines} "
         f"Incorporate this psychological knowledge if relevant: {psych_context}"
     )
 
