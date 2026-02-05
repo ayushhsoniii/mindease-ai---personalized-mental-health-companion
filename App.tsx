@@ -103,6 +103,7 @@ const App: React.FC = () => {
     setShowLanguageMenu(false);
   };
   const t = translations[userData.language];
+  const isDarkTheme = userData.theme.startsWith('dark');
 
 
   return (
@@ -216,13 +217,19 @@ const App: React.FC = () => {
       <main className="max-w-7xl mx-auto px-6 pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-1 mb-6 p-1 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/40 w-fit">
+            <div className={`flex items-center gap-1 mb-6 p-1 backdrop-blur-sm rounded-2xl border w-fit ${
+              isDarkTheme ? 'bg-white/10 border-white/10' : 'bg-white/50 border-white/40'
+            }`}>
               {(['chat', 'tests', 'insights', 'personality', 'music'] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                    activeTab === tab ? 'bg-white text-[var(--primary)] shadow-md' : 'text-slate-400 hover:text-slate-600'
+                    activeTab === tab
+                      ? 'bg-white text-[var(--primary)] shadow-md'
+                      : isDarkTheme
+                        ? 'text-slate-200 hover:text-white'
+                        : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   {tab}
