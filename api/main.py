@@ -9,7 +9,12 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+import langchain_huggingface
 load_dotenv()
+
+
+print("DEBUG ENV KEY =", os.environ.get("GOOGLE_API_KEY"))
+
 
 
 # Set User-Agent at the very top to avoid warnings from loaders
@@ -22,7 +27,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_core.messages import SystemMessage, HumanMessage
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 
@@ -145,21 +150,6 @@ def _ensure_text(value) -> str:
         return _ensure_text(content_attr)
     return str(value)
 
-def _to_langchain_message(msg):
-    if not isinstance(msg, dict):
-        return None
-    role = (msg.get("role") or "").lower()
-    content = _ensure_text(msg.get("content", ""))
-    if not content:
-        return None
-    if role == "user":
-        return HumanMessage(content=content)
-    if role in {"assistant", "model", "ai"}:
-        return AIMessage(content=content)
-    if role == "system":
-        return SystemMessage(content=content)
-    return HumanMessage(content=content)
-
 def _load_pdf_documents() -> List[Document]:
     if not RAG_PDF_ENABLED:
         return []
@@ -266,7 +256,7 @@ async def ingest_knowledge():
 
 @app.on_event("startup")
 async def startup_event():
-    global llm, rag_status
+    global llm
     await init_db()
     if GOOGLE_API_KEY:
         try:
@@ -299,12 +289,8 @@ async def chat_stream(request: Request):
         raise HTTPException(status_code=503, detail="AI Model not initialized on backend. Use frontend direct SDK.")
         
     data = await request.json()
-    user_message = _ensure_text(data.get("message"))
-    if not user_message:
-        raise HTTPException(status_code=400, detail="Missing message")
+    user_message = data.get("message")
     history = data.get("history", [])
-    if not isinstance(history, list):
-        history = []
     context = data.get("context", {})
     
     psych_context = ""
@@ -324,12 +310,13 @@ async def chat_stream(request: Request):
     )
 
     async def event_generator():
-        messages = [SystemMessage(content=_ensure_text(system_instruction))]
+        messages = [SystemMessage(content=system_instruction)]
         # Keep context window manageable
         for msg in history[-8:]:
-            lc_msg = _to_langchain_message(msg)
-            if lc_msg is not None:
-                messages.append(lc_msg)
+            if msg.get('role') == 'user':
+                messages.append(HumanMessage(content=msg.get('content', '')))
+            else:
+                messages.append(SystemMessage(content=msg.get('content', '')))
         
         messages.append(HumanMessage(content=user_message))
         
