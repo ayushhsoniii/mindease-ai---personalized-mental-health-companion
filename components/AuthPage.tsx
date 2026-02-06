@@ -1,12 +1,14 @@
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { HeartHandshake, ArrowRight, User, Globe, Calendar, ChevronDown, UserCircle2, Camera, Check, Upload } from 'lucide-react';
-import { UserProfile } from '../types';
+import { UserProfile, AppLanguage } from '../types';
+import { getTranslations } from '../translations';
 
 interface AuthPageProps {
   onLogin: (profile: Partial<UserProfile>) => void;
   onCompleteOnboarding: (fullProfile: UserProfile) => void;
   initialStep: 'login' | 'onboarding';
+  language: AppLanguage;
 }
 
 const COUNTRIES_WITH_FLAGS = [
@@ -30,7 +32,8 @@ const COUNTRIES_WITH_FLAGS = [
   { name: "United States", flag: "🇺🇸" }, { name: "Vietnam", flag: "🇻🇳" }
 ];
 
-const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, initialStep }) => {
+const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, initialStep, language }) => {
+  const t = getTranslations(language);
   const [nameInput, setNameInput] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
@@ -102,6 +105,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
   );
   const firstName = nameInput.trim().split(' ')[0];
   const isSaving = saveStatus === 'saving';
+  const subtitle = t.auth.subtitle.replace('{name}', firstName ? `, ${firstName}` : '');
 
   return (
     <div className="min-h-screen calm-gradient flex items-center justify-center p-6 text-slate-900 transition-theme">
@@ -113,21 +117,21 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
                 <HeartHandshake className="w-8 h-8 text-white" />
               </div>
             </div>
-            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Personalize Your Profile</h2>
+            <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">{t.auth.title}</h2>
             <p className="text-slate-500 mt-2">
-              Tailoring our AI support for you{firstName ? `, ${firstName}` : ''}.
+              {subtitle}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="space-y-2 text-left">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Your Full Name</label>
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t.auth.nameLabel}</label>
               <div className="relative">
                 <UserCircle2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 pointer-events-none" />
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Alex Johnson"
+                  placeholder={t.auth.namePlaceholder}
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
                   className="w-full pl-12 pr-6 py-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-[var(--primary-light)] focus:bg-white focus:ring-4 focus:ring-[var(--primary-light)]/50 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-300"
@@ -135,7 +139,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
               </div>
             </div>
             <div className="space-y-4">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 block text-center">Customize Your Avatar</label>
+              <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 block text-center">{t.auth.avatarLabel}</label>
 
               <div className="flex flex-col items-center gap-6">
                 <div className="relative group">
@@ -158,7 +162,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
 
                 <div className="space-y-4 w-full">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
-                    Presets for {formData.nationality}
+                    {t.auth.presetsFor.replace('{country}', formData.nationality)}
                   </p>
                   <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 py-2 px-1">
                     {presetAvatars.map((url, i) => (
@@ -184,10 +188,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
                       className={`aspect-square rounded-2xl border-2 border-dashed border-slate-300 text-slate-400 flex flex-col items-center justify-center hover:bg-slate-50 transition-colors ${
                         isCustomUpload ? 'border-green-500 bg-green-50 text-green-600' : ''
                       }`}
-                      title="Upload custom photo"
+                      title={t.auth.uploadTitle}
                     >
                       <Upload className="w-5 h-5" />
-                      <span className="text-[8px] font-bold mt-1 uppercase">Own DP</span>
+                      <span className="text-[8px] font-bold mt-1 uppercase">{t.auth.uploadShort}</span>
                     </button>
                   </div>
                   <input
@@ -203,7 +207,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Nationality</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t.auth.nationalityLabel}</label>
                 <div className="relative">
                   <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 pointer-events-none" />
                   <select
@@ -221,13 +225,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Date of Birth (DD/MM/YY)</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t.auth.dobLabel}</label>
                 <div className="relative">
                   <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 pointer-events-none" />
                   <input
                     type="text"
                     required
-                    placeholder="e.g. 15/08/95"
+                    placeholder={t.auth.dobPlaceholder}
                     pattern="\d{2}/\d{2}/\d{2}"
                     value={formData.dob}
                     onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
@@ -237,7 +241,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Gender</label>
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">{t.auth.genderLabel}</label>
                 <div className="relative">
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 pointer-events-none" />
                   <select
@@ -246,11 +250,11 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                     className="w-full pl-12 pr-10 py-4 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-[var(--primary-light)] focus:bg-white focus:ring-4 focus:ring-[var(--primary-light)]/50 outline-none transition-all font-bold text-slate-900 appearance-none cursor-pointer"
                   >
-                    <option value="" disabled className="text-slate-300">Select gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="non-binary">Non-binary</option>
-                    <option value="prefer-not-to-say">Prefer not to say</option>
+                    <option value="" disabled className="text-slate-300">{t.auth.genderPlaceholder}</option>
+                    <option value="male">{t.auth.genderOptions.male}</option>
+                    <option value="female">{t.auth.genderOptions.female}</option>
+                    <option value="non-binary">{t.auth.genderOptions.nonBinary}</option>
+                    <option value="prefer-not-to-say">{t.auth.genderOptions.preferNot}</option>
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 pointer-events-none" />
                 </div>
@@ -266,18 +270,18 @@ const AuthPage: React.FC<AuthPageProps> = ({ onLogin, onCompleteOnboarding, init
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-slate-100'
               }`}
             >
-              {isSaving ? 'Saving...' : 'Begin Journey'}
+              {isSaving ? t.auth.saving : t.auth.submit}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
             {saveStatus === 'saving' && (
               <div className="text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Saving your profile...
+                {t.auth.savingNote}
               </div>
             )}
             {saveStatus === 'saved' && (
               <div className="flex items-center justify-center gap-2 text-emerald-600 text-xs font-bold uppercase tracking-widest">
                 <Check className="w-4 h-4" />
-                Profile saved
+                {t.auth.saved}
               </div>
             )}
           </form>

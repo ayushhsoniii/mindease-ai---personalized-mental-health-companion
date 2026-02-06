@@ -1,11 +1,13 @@
 
 import React from 'react';
 import { Palette, Check, Sparkles, Moon, Sun, Wind, Trees, Flame, Waves, Heart, Mountain, Zap } from 'lucide-react';
-import { AppTheme } from '../types';
+import { AppTheme, AppLanguage } from '../types';
+import { getTranslations } from '../translations';
 
 interface ThemePageProps {
   currentTheme: AppTheme;
   onThemeChange: (theme: AppTheme) => void;
+  language: AppLanguage;
 }
 
 interface ThemeDefinition {
@@ -111,118 +113,130 @@ const NEON_THEMES: ThemeDefinition[] = [
   }
 ];
 
-const ThemePage: React.FC<ThemePageProps> = ({ currentTheme, onThemeChange }) => {
+const ThemePage: React.FC<ThemePageProps> = ({ currentTheme, onThemeChange, language }) => {
+  const t = getTranslations(language);
+  const themeCatalog = t.themesPage?.catalog || {};
   return (
     <div className="max-w-6xl mx-auto space-y-16 animate-in fade-in duration-700">
       <div className="text-center space-y-4">
         <div className="w-16 h-16 bg-white rounded-3xl shadow-xl flex items-center justify-center mx-auto mb-6 text-[var(--primary)] border border-[var(--border)]">
           <Palette className="w-8 h-8" />
         </div>
-        <h1 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight theme-text-main">Digital Sanctuaries</h1>
+        <h1 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight theme-text-main">{t.themesPage.title}</h1>
         <p className="text-lg theme-text-muted max-w-2xl mx-auto font-medium">
-          Choose an atmosphere that resonates with your mind. From calming skies to cybernetic midnights.
+          {t.themesPage.subtitle}
         </p>
       </div>
 
       <section className="space-y-8">
         <div className="flex items-center gap-3 border-b border-[var(--border)] pb-4">
            <Moon className="w-5 h-5 theme-text-main" />
-           <h2 className="text-xl font-black uppercase tracking-widest theme-text-main">Neon Midnight Series</h2>
+           <h2 className="text-xl font-black uppercase tracking-widest theme-text-main">{t.themesPage.neonSeries}</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {NEON_THEMES.map((theme) => (
-            <button
-              key={theme.id}
-              onClick={() => onThemeChange(theme.id)}
-              className={`relative p-8 rounded-[40px] text-left transition-all group overflow-hidden border-2 flex flex-col justify-between h-72 ${
-                currentTheme === theme.id 
-                  ? 'border-[var(--primary)] bg-black shadow-[0_0_30px_rgba(0,243,255,0.1)] scale-[1.02]' 
-                  : 'border-transparent bg-black hover:border-white/10 hover:-translate-y-1'
-              }`}
-            >
-              <div className={`absolute -right-10 -top-10 w-40 h-40 rounded-full bg-gradient-to-br ${theme.gradient} opacity-5 group-hover:opacity-20 transition-opacity`} />
-              
-              <div className="relative z-10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 shadow-lg ${
-                  currentTheme === theme.id ? 'bg-[var(--primary)] text-black' : 'bg-zinc-900 text-zinc-500'
-                }`}>
-                  <theme.icon className="w-7 h-7" />
-                </div>
-                <h3 className="text-2xl font-black text-white mb-2">{theme.name}</h3>
-                <p className="text-sm text-zinc-500 font-medium leading-relaxed">
-                  {theme.description}
-                </p>
-              </div>
-
-              <div className="relative z-10 flex items-center justify-between mt-auto">
-                <div className="flex gap-2">
-                  <div className={`w-6 h-6 rounded-full bg-black border-2 border-zinc-800 shadow-sm`} />
-                  <div className={`w-6 h-6 rounded-full ${theme.colors[1]} border-2 border-white shadow-sm`} />
-                </div>
-                {currentTheme === theme.id ? (
-                  <div className="flex items-center gap-2 text-[var(--primary)] font-black text-[10px] uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">
-                    <Check className="w-3 h-3" /> Active
+          {NEON_THEMES.map((theme) => {
+            const themeText = themeCatalog[theme.id] || {};
+            const name = themeText.name || theme.name;
+            const description = themeText.description || theme.description;
+            return (
+              <button
+                key={theme.id}
+                onClick={() => onThemeChange(theme.id)}
+                className={`relative p-8 rounded-[40px] text-left transition-all group overflow-hidden border-2 flex flex-col justify-between h-72 ${
+                  currentTheme === theme.id 
+                    ? 'border-[var(--primary)] bg-black shadow-[0_0_30px_rgba(0,243,255,0.1)] scale-[1.02]' 
+                    : 'border-transparent bg-black hover:border-white/10 hover:-translate-y-1'
+                }`}
+              >
+                <div className={`absolute -right-10 -top-10 w-40 h-40 rounded-full bg-gradient-to-br ${theme.gradient} opacity-5 group-hover:opacity-20 transition-opacity`} />
+                
+                <div className="relative z-10">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 shadow-lg ${
+                    currentTheme === theme.id ? 'bg-[var(--primary)] text-black' : 'bg-zinc-900 text-zinc-500'
+                  }`}>
+                    <theme.icon className="w-7 h-7" />
                   </div>
-                ) : (
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity">Engage Neon</span>
-                )}
-              </div>
-            </button>
-          ))}
+                  <h3 className="text-2xl font-black text-white mb-2">{name}</h3>
+                  <p className="text-sm text-zinc-500 font-medium leading-relaxed">
+                    {description}
+                  </p>
+                </div>
+
+                <div className="relative z-10 flex items-center justify-between mt-auto">
+                  <div className="flex gap-2">
+                    <div className={`w-6 h-6 rounded-full bg-black border-2 border-zinc-800 shadow-sm`} />
+                    <div className={`w-6 h-6 rounded-full ${theme.colors[1]} border-2 border-white shadow-sm`} />
+                  </div>
+                  {currentTheme === theme.id ? (
+                    <div className="flex items-center gap-2 text-[var(--primary)] font-black text-[10px] uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full">
+                      <Check className="w-3 h-3" /> {t.themesPage.activeLabel}
+                    </div>
+                  ) : (
+                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity">{t.themesPage.engageNeon}</span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
 
       <section className="space-y-8">
         <div className="flex items-center gap-3 border-b border-[var(--border)] pb-4">
            <Sun className="w-5 h-5 theme-text-main" />
-           <h2 className="text-xl font-black uppercase tracking-widest theme-text-main">Vibrant Nature Series</h2>
+           <h2 className="text-xl font-black uppercase tracking-widest theme-text-main">{t.themesPage.natureSeries}</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {THEMES.map((theme) => (
-            <button
-              key={theme.id}
-              onClick={() => onThemeChange(theme.id)}
-              className={`relative p-8 rounded-[40px] text-left transition-all group overflow-hidden border-2 flex flex-col justify-between h-72 ${
-                currentTheme === theme.id 
-                  ? 'border-[var(--primary)] bg-white shadow-2xl scale-[1.02]' 
-                  : 'border-transparent bg-white shadow-sm hover:shadow-xl hover:-translate-y-1'
-              }`}
-            >
-              <div className={`absolute -right-10 -top-10 w-40 h-40 rounded-full bg-gradient-to-br ${theme.gradient} opacity-5 group-hover:opacity-10 transition-opacity`} />
-              
-              <div className="relative z-10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 shadow-lg ${
-                  currentTheme === theme.id ? 'bg-[var(--primary)] text-white' : 'bg-slate-50 text-slate-400'
-                }`}>
-                  <theme.icon className="w-7 h-7" />
-                </div>
-                <h3 className="text-2xl font-black text-slate-800 mb-2 theme-text-main">{theme.name}</h3>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed opacity-80 theme-text-muted">
-                  {theme.description}
-                </p>
-              </div>
-
-              <div className="relative z-10 flex items-center justify-between mt-auto">
-                <div className="flex gap-2">
-                  <div className={`w-6 h-6 rounded-full ${theme.colors[0]} border-2 border-white shadow-sm`} />
-                  <div className={`w-6 h-6 rounded-full ${theme.colors[1]} border-2 border-white shadow-sm`} />
-                </div>
-                {currentTheme === theme.id ? (
-                  <div className="flex items-center gap-2 text-[var(--primary)] font-black text-[10px] uppercase tracking-widest bg-[var(--primary-light)] px-3 py-1 rounded-full">
-                    <Check className="w-3 h-3" /> Active
+          {THEMES.map((theme) => {
+            const themeText = themeCatalog[theme.id] || {};
+            const name = themeText.name || theme.name;
+            const description = themeText.description || theme.description;
+            return (
+              <button
+                key={theme.id}
+                onClick={() => onThemeChange(theme.id)}
+                className={`relative p-8 rounded-[40px] text-left transition-all group overflow-hidden border-2 flex flex-col justify-between h-72 ${
+                  currentTheme === theme.id 
+                    ? 'border-[var(--primary)] bg-white shadow-2xl scale-[1.02]' 
+                    : 'border-transparent bg-white shadow-sm hover:shadow-xl hover:-translate-y-1'
+                }`}
+              >
+                <div className={`absolute -right-10 -top-10 w-40 h-40 rounded-full bg-gradient-to-br ${theme.gradient} opacity-5 group-hover:opacity-10 transition-opacity`} />
+                
+                <div className="relative z-10">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 shadow-lg ${
+                    currentTheme === theme.id ? 'bg-[var(--primary)] text-white' : 'bg-slate-50 text-slate-400'
+                  }`}>
+                    <theme.icon className="w-7 h-7" />
                   </div>
-                ) : (
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">Select Sanctuary</span>
-                )}
-              </div>
-            </button>
-          ))}
+                  <h3 className="text-2xl font-black text-slate-800 mb-2 theme-text-main">{name}</h3>
+                  <p className="text-sm text-slate-500 font-medium leading-relaxed opacity-80 theme-text-muted">
+                    {description}
+                  </p>
+                </div>
+
+                <div className="relative z-10 flex items-center justify-between mt-auto">
+                  <div className="flex gap-2">
+                    <div className={`w-6 h-6 rounded-full ${theme.colors[0]} border-2 border-white shadow-sm`} />
+                    <div className={`w-6 h-6 rounded-full ${theme.colors[1]} border-2 border-white shadow-sm`} />
+                  </div>
+                  {currentTheme === theme.id ? (
+                    <div className="flex items-center gap-2 text-[var(--primary)] font-black text-[10px] uppercase tracking-widest bg-[var(--primary-light)] px-3 py-1 rounded-full">
+                      <Check className="w-3 h-3" /> {t.themesPage.activeLabel}
+                    </div>
+                  ) : (
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">{t.themesPage.selectSanctuary}</span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
 
       <div className="p-10 theme-card rounded-[48px] text-center backdrop-blur-sm">
         <p className="text-xs font-black uppercase tracking-[0.2em] theme-text-muted">
-          Your choice of atmosphere syncs across all devices • Deep personalization for your wellbeing
+          {t.themesPage.footerNote}
         </p>
       </div>
     </div>

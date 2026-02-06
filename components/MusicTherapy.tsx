@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Music, Play, ExternalLink, RefreshCcw, Loader2, Music2, Headphones, Sparkles, CheckCircle2, Zap, Activity } from 'lucide-react';
-import { Mood, SpotifyPlaylist, UserProfile } from '../types';
+import { Mood, SpotifyPlaylist, UserProfile, AppLanguage } from '../types';
 import { geminiService } from '../services/geminiService';
+import { getTranslations } from '../translations';
 
 interface MusicTherapyProps {
   currentMood: Mood | null;
@@ -12,6 +13,7 @@ interface MusicTherapyProps {
   onLink: () => void;
   onRefresh: (playlists: SpotifyPlaylist[]) => void;
   onVibeUpdate: (vibe: string) => void;
+  language: AppLanguage;
 }
 
 const MusicTherapy: React.FC<MusicTherapyProps> = ({ 
@@ -21,8 +23,10 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
   recommendedPlaylists, 
   onLink,
   onRefresh,
-  onVibeUpdate
+  onVibeUpdate,
+  language
 }) => {
+  const t = getTranslations(language);
   const [loading, setLoading] = useState(false);
   const [linking, setLinking] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -39,7 +43,7 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
   const scanActivity = () => {
     setScanning(true);
     setTimeout(() => {
-      const vibes = ["Mellow & Reflective", "High-Energy Focus", "Calm & Ambient", "Stirring & Emotional", "Dark & Intense", "Uplifting & Vibrant"];
+      const vibes = t.musicPage.vibes || ["Mellow & Reflective", "High-Energy Focus", "Calm & Ambient", "Stirring & Emotional", "Dark & Intense", "Uplifting & Vibrant"];
       const randomVibe = vibes[Math.floor(Math.random() * vibes.length)];
       onVibeUpdate(randomVibe);
       setScanning(false);
@@ -49,7 +53,7 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
   const fetchPlaylists = async () => {
     setLoading(true);
     try {
-      const playlists = await geminiService.getMusicRecommendations(currentMood, profile);
+      const playlists = await geminiService.getMusicRecommendations(currentMood, profile, language);
       onRefresh(playlists);
     } catch (err) {
       console.error(err);
@@ -77,13 +81,13 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
               <div className="bg-[#1DB954] p-3 rounded-2xl shadow-lg shadow-[#1DB954]/20">
                 <Music className="w-8 h-8 text-white" />
               </div>
-              <span className="text-xs font-black uppercase tracking-[0.3em] text-[#1DB954]">Spotify Connect</span>
+              <span className="text-xs font-black uppercase tracking-[0.3em] text-[#1DB954]">{t.musicPage.spotifyConnect}</span>
             </div>
 
             <div className="space-y-4">
-              <h1 className="text-4xl md:text-6xl font-black tracking-tighter">Music for your Soul.</h1>
+              <h1 className="text-4xl md:text-6xl font-black tracking-tighter">{t.musicPage.heroTitle}</h1>
               <p className="text-xl text-zinc-400 max-w-xl leading-relaxed">
-                Connect your Spotify to let MindEase AI curate therapy-grade playlists and track your listening vibe for deeper personalized support.
+                {t.musicPage.heroSubtitle}
               </p>
             </div>
 
@@ -95,12 +99,12 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
               {linking ? (
                 <>
                   <Loader2 className="w-6 h-6 animate-spin" />
-                  Connecting...
+                  {t.musicPage.connecting}
                 </>
               ) : (
                 <>
                   <Play className="w-6 h-6 fill-current" />
-                  Link Spotify Account
+                  {t.musicPage.linkAccount}
                 </>
               )}
             </button>
@@ -118,8 +122,8 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
                <Activity className="w-8 h-8 text-white" />
             </div>
             <div>
-               <h2 className="text-2xl font-black text-slate-800">Spotify Vibe Tracker</h2>
-               <p className="text-sm text-slate-500 font-medium">Sync your recent activity to help MindEase AI sense your overall mood.</p>
+               <h2 className="text-2xl font-black text-slate-800">{t.musicPage.vibeTrackerTitle}</h2>
+               <p className="text-sm text-slate-500 font-medium">{t.musicPage.vibeTrackerSubtitle}</p>
             </div>
          </div>
          <button 
@@ -128,19 +132,21 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
            className="flex items-center gap-3 px-8 py-4 bg-white text-[#1DB954] border-2 border-[#1DB954] rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#1DB954] hover:text-white transition-all active:scale-95 disabled:opacity-50"
          >
            {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
-           {scanning ? 'Analyzing History...' : 'Sync Recent Vibe'}
+           {scanning ? t.musicPage.analyzingHistory : t.musicPage.syncRecentVibe}
          </button>
       </div>
 
       <div className="flex flex-col md:flex-row items-center justify-between gap-8">
         <div className="space-y-3 text-center md:text-left">
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-[#1DB954] justify-center md:justify-start">
-             <Headphones className="w-4 h-4" /> Therapeutic Audio
+             <Headphones className="w-4 h-4" /> {t.musicPage.therapeuticAudio}
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-800">
-            For you, <span className="text-[var(--primary)]">{profile?.name?.split(' ')[0]}</span>
+            {t.musicPage.forYou.replace('{name}', profile?.name?.split(' ')[0] || '')}
           </h1>
-          <p className="theme-text-muted font-medium text-lg">Personalized selections based on your {profile?.personalityType} archetype.</p>
+          <p className="theme-text-muted font-medium text-lg">
+            {t.musicPage.personalizedSelections.replace('{type}', profile?.personalityType || '')}
+          </p>
         </div>
 
         <button 
@@ -149,7 +155,7 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
           className="flex items-center gap-3 px-6 py-3 bg-white border border-slate-100 rounded-2xl font-bold shadow-sm hover:shadow-md transition-all active:scale-95 text-slate-600 disabled:opacity-50"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin text-[var(--primary)]" /> : <Zap className="w-4 h-4 text-[var(--primary)]" />}
-          Re-Curate
+          {t.musicPage.reCurate}
         </button>
       </div>
 
@@ -157,7 +163,7 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
         {loading ? (
            <div className="lg:col-span-2 py-20 flex flex-col items-center justify-center space-y-4">
               <Loader2 className="w-12 h-12 text-[#1DB954] animate-spin" />
-              <p className="text-zinc-400 font-black uppercase tracking-[0.2em] text-xs">Matching sounds to your spirit...</p>
+              <p className="text-zinc-400 font-black uppercase tracking-[0.2em] text-xs">{t.musicPage.matchingSounds}</p>
            </div>
         ) : (
           recommendedPlaylists.map((playlist) => {
@@ -167,7 +173,7 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#1DB954]/10 text-[#1DB954] rounded-full text-[10px] font-black uppercase tracking-widest mb-2">
-                       <Sparkles className="w-3 h-3" /> Archetype Pick
+                       <Sparkles className="w-3 h-3" /> {t.musicPage.archetypePick}
                     </div>
                     <h3 className="text-2xl font-black text-slate-800 group-hover:text-[var(--primary)] transition-colors">{playlist.title}</h3>
                     <p className="text-sm theme-text-muted font-medium italic">"{playlist.description}"</p>

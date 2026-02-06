@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ClipboardCheck, ArrowRight, CheckCircle2, Search, Brain, Activity, ShieldAlert, Sparkles, AlertCircle, Zap, Heart } from 'lucide-react';
 import { TestResult, AppLanguage } from '../types';
+import { getTranslations } from '../translations';
 
 interface TestOption {
   label: string;
@@ -180,19 +181,33 @@ interface AssessmentTestProps {
 
 // Fix: Added language to component props
 const AssessmentTest: React.FC<AssessmentTestProps> = ({ onComplete, initialTestId, language }) => {
-  const [activeTest, setActiveTest] = useState<TestData | null>(
-    initialTestId ? TESTS_DATA.find(t => t.id === initialTestId) || null : null
-  );
+  const t = useMemo(() => getTranslations(language), [language]);
+  const [activeTestId, setActiveTestId] = useState<string | null>(initialTestId || null);
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [isFinished, setIsFinished] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<'All' | 'Mood' | 'Stress' | 'Behavior' | 'ADHD' | 'Intelligence'>('All');
-
-  const filteredTests = TESTS_DATA.filter(t => 
-    (activeCategory === 'All' || t.category === activeCategory) &&
-    (t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-     t.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  const translatedTests = useMemo(() => {
+    const overrides = t.assessment?.tests || {};
+    return TESTS_DATA.map(test => {
+      const override = overrides[test.id] || {};
+      return {
+        ...test,
+        name: override.name || test.name,
+        description: override.description || test.description,
+        questions: override.questions || test.questions
+      };
+    });
+  }, [t]);
+  const activeTest = useMemo(
+    () => translatedTests.find(test => test.id === activeTestId) || null,
+    [translatedTests, activeTestId]
+  );
+  const filteredTests = translatedTests.filter(test => 
+    (activeCategory === 'All' || test.category === activeCategory) &&
+    (test.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+     test.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleAnswer = (val: number) => {
@@ -204,12 +219,14 @@ const AssessmentTest: React.FC<AssessmentTestProps> = ({ onComplete, initialTest
       const totalScore = newAnswers.reduce((a, b) => a + b, 0);
       const maxPossible = activeTest!.questions.length * Math.max(...activeTest!.options.map(o => o.value));
       
+      const rawInterpretation = activeTest!.getInterpretation(totalScore);
+      const interpretation = t.assessment.interpretations?.[rawInterpretation] || rawInterpretation;
       const result: TestResult = {
         id: Date.now().toString(),
         testName: activeTest!.name,
         score: totalScore,
         maxScore: maxPossible,
-        interpretation: activeTest!.getInterpretation(totalScore),
+        interpretation,
         date: new Date().toLocaleDateString()
       };
       onComplete(result);
@@ -218,32 +235,34 @@ const AssessmentTest: React.FC<AssessmentTestProps> = ({ onComplete, initialTest
   };
 
   const resetTest = () => {
-    setActiveTest(null);
+    setActiveTestId(null);
     setIsFinished(false);
     setCurrentStep(0);
     setAnswers([]);
   };
 
   if (isFinished) {
+    const rawInterpretation = activeTest?.getInterpretation(answers.reduce((a, b) => a + b, 0)) || '';
+    const localizedInterpretation = t.assessment.interpretations?.[rawInterpretation] || rawInterpretation;
     return (
       <div className="bg-white p-10 rounded-[48px] text-center space-y-6 border border-slate-100 shadow-sm animate-in zoom-in duration-300">
         <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-emerald-50">
           <Sparkles className="w-10 h-10" />
         </div>
         <div className="space-y-2">
-          <h3 className="text-3xl font-black text-slate-800 tracking-tight">Insight Gained</h3>
-          <p className="text-slate-500 max-w-sm mx-auto">This knowledge is a gift to your future self. We've integrated this into your personalized path.</p>
+          <h3 className="text-3xl font-black text-slate-800 tracking-tight">{t.assessment.insightTitle}</h3>
+          <p className="text-slate-500 max-w-sm mx-auto">{t.assessment.insightSubtitle}</p>
         </div>
         <div className="p-6 bg-slate-50 rounded-[32px] inline-block">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Your Journey Stage</span>
-          <span className="text-2xl font-black text-emerald-600 uppercase">{activeTest?.getInterpretation(answers.reduce((a,b)=>a+b,0))}</span>
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1">{t.assessment.journeyStage}</span>
+          <span className="text-2xl font-black text-emerald-600 uppercase">{localizedInterpretation}</span>
         </div>
         <div>
           <button 
             onClick={resetTest}
             className="px-8 py-4 bg-[var(--primary)] text-white rounded-3xl font-bold shadow-xl shadow-blue-100 hover:opacity-90 transition-all active:scale-95"
           >
-            Back to Dashboard
+            {t.assessment.backToDashboard}
           </button>
         </div>
       </div>
@@ -267,9 +286,15 @@ const AssessmentTest: React.FC<AssessmentTestProps> = ({ onComplete, initialTest
             <span className="text-xs font-black text-[var(--primary)] uppercase tracking-widest block mb-1">
               {activeTest.name}
             </span>
-            <span className="text-slate-400 text-sm font-medium">Step {currentStep + 1} of {activeTest.questions.length}</span>
+            <span className="text-slate-400 text-sm font-medium">
+              {t.assessment.stepLabel
+                .replace('{current}', String(currentStep + 1))
+                .replace('{total}', String(activeTest.questions.length))}
+            </span>
           </div>
-          <button onClick={resetTest} className="text-slate-400 hover:text-slate-600 font-bold text-sm bg-slate-50 px-4 py-2 rounded-xl transition-all">Pause</button>
+          <button onClick={resetTest} className="text-slate-400 hover:text-slate-600 font-bold text-sm bg-slate-50 px-4 py-2 rounded-xl transition-all">
+            {t.assessment.pause}
+          </button>
         </div>
 
         <div className="mb-10 min-h-[100px] flex items-center">
@@ -279,18 +304,20 @@ const AssessmentTest: React.FC<AssessmentTestProps> = ({ onComplete, initialTest
         </div>
 
         <div className={`grid grid-cols-1 ${activeTest.options.length > 4 ? 'md:grid-cols-2' : ''} gap-4`}>
-          {activeTest.options.map((option, idx) => (
+          {activeTest.options.map((option, idx) => {
+            const optionLabel = t.assessment.optionLabels?.[option.label] || option.label;
+            return (
             <button
               key={idx}
               onClick={() => handleAnswer(option.value)}
               className="p-6 text-left bg-slate-50 hover:bg-white border-2 border-transparent hover:border-[var(--primary)] hover:shadow-xl hover:shadow-blue-50/50 rounded-3xl transition-all group flex justify-between items-center"
             >
-              <span className="font-bold text-slate-700 text-lg group-hover:text-[var(--primary)] transition-colors">{option.label}</span>
+              <span className="font-bold text-slate-700 text-lg group-hover:text-[var(--primary)] transition-colors">{optionLabel}</span>
               <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
                 <ArrowRight className="w-5 h-5 text-[var(--primary)]" />
               </div>
             </button>
-          ))}
+          )})}
         </div>
       </div>
     );
@@ -308,7 +335,7 @@ const AssessmentTest: React.FC<AssessmentTestProps> = ({ onComplete, initialTest
                 activeCategory === cat ? 'bg-[var(--primary)] text-white shadow-lg shadow-blue-100' : 'text-slate-400 hover:text-slate-600'
               }`}
             >
-              {cat}
+              {t.assessment.filters?.[cat] || cat}
             </button>
           ))}
         </div>
@@ -316,7 +343,7 @@ const AssessmentTest: React.FC<AssessmentTestProps> = ({ onComplete, initialTest
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-[var(--primary)] transition-colors" />
           <input
             type="text"
-            placeholder="Search self-discovery tools..."
+            placeholder={t.assessment.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-11 pr-4 py-3 bg-white border border-slate-100 rounded-2xl focus:ring-2 focus:ring-blue-100 transition-all text-sm font-medium outline-none shadow-sm"
@@ -345,16 +372,16 @@ const AssessmentTest: React.FC<AssessmentTestProps> = ({ onComplete, initialTest
                   {test.category === 'ADHD' && <Sparkles className="w-7 h-7" />}
                   {test.category === 'Intelligence' && <Zap className="w-7 h-7" />}
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{test.category}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{t.assessment.filters?.[test.category] || test.category}</span>
               </div>
               <h3 className="text-xl font-black text-slate-800 mb-3 group-hover:text-[var(--primary)] transition-colors">{test.name}</h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-8 opacity-80">{test.description}</p>
             </div>
             <button 
-              onClick={() => setActiveTest(test)}
+              onClick={() => setActiveTestId(test.id)}
               className="w-full py-4 bg-slate-50 hover:bg-[var(--primary)] hover:text-white text-slate-700 rounded-3xl font-bold transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2 group/btn"
             >
-              Start Discovery
+              {t.assessment.startDiscovery}
               <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
             </button>
           </div>

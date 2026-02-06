@@ -1,4 +1,5 @@
-import { ChatMessage, Mood, UserProfile, TestResult, Resource, SpotifyPlaylist, ResponseStyle, UserData } from "../types";
+import { ChatMessage, Mood, UserProfile, TestResult, Resource, SpotifyPlaylist, ResponseStyle, UserData, AppLanguage } from "../types";
+import { getTranslations } from "../translations";
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -36,6 +37,7 @@ export class ApiService {
     responseStyle: ResponseStyle,
     spotifyVibe?: string
   ) {
+    const t = getTranslations((language as AppLanguage) || "en");
     try {
       const response = await fetch(`${API_BASE_URL}/chat/stream`, {
         method: 'POST',
@@ -55,7 +57,7 @@ export class ApiService {
       });
 
       if (!response.ok) {
-        if (response.status === 429) yield { text: "Error: Quota exceeded (429). Please wait 1 minute." };
+        if (response.status === 429) yield { text: t.chat.errors.quota };
         else throw new Error("Backend error");
       }
 
@@ -72,7 +74,7 @@ export class ApiService {
       }
     } catch (error) {
       console.error("API Error:", error);
-      yield { text: "I'm having trouble connecting to my local knowledge base. I will switch to direct cloud reasoning to assist you." };
+      yield { text: t.chat.errors.ragFallback };
     }
   }
 

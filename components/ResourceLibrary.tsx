@@ -1,10 +1,12 @@
 
 import React from 'react';
-import { Resource } from '../types';
+import { Resource, AppLanguage } from '../types';
 import { BookOpen, Activity, Heart, LifeBuoy, ExternalLink } from 'lucide-react';
+import { getTranslations } from '../translations';
 
 interface ResourceLibraryProps {
   resources: Resource[];
+  language?: AppLanguage;
 }
 
 const getIcon = (category: string) => {
@@ -17,13 +19,14 @@ const getIcon = (category: string) => {
   }
 };
 
-const ResourceLibrary: React.FC<ResourceLibraryProps> = ({ resources }) => {
+const ResourceLibrary: React.FC<ResourceLibraryProps> = ({ resources, language = 'en' }) => {
+  const t = getTranslations(language);
   return (
     <div className="grid grid-cols-1 gap-4">
       {resources.length === 0 ? (
         <div className="p-8 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
           <p className="text-sm text-slate-500">
-            Resources will appear here based on your conversation.
+            {t.resources.empty}
           </p>
         </div>
       ) : (
@@ -39,14 +42,14 @@ const ResourceLibrary: React.FC<ResourceLibraryProps> = ({ resources }) => {
                   <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${
                     res.category === 'Emergency' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
                   }`}>
-                    {res.category}
+                    {t.resources.categories?.[res.category] || res.category}
                   </span>
                 </div>
                 <p className="text-sm text-slate-600 leading-relaxed mb-3">
                   {res.description}
                 </p>
                 <button className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider">
-                  Learn More <ExternalLink className="w-3 h-3" />
+                  {t.resources.learnMore} <ExternalLink className="w-3 h-3" />
                 </button>
               </div>
             </div>

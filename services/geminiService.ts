@@ -128,12 +128,13 @@ export const geminiService = {
     }
   },
 
-  async getMusicRecommendations(mood: Mood | null, profile: UserProfile | null): Promise<SpotifyPlaylist[]> {
+  async getMusicRecommendations(mood: Mood | null, profile: UserProfile | null, language?: string): Promise<SpotifyPlaylist[]> {
     const ai = getAI();
     try {
+      const languageName = LANGUAGE_NAMES[language || "en"] || language || "English";
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Suggest 4 Spotify playlist themes for a person feeling ${mood || 'neutral'} with personality ${profile?.personalityType || 'unknown'}.`,
+        contents: `Suggest 4 Spotify playlist themes for a person feeling ${mood || 'neutral'} with personality ${profile?.personalityType || 'unknown'}. Respond in ${languageName}.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {

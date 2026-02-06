@@ -58,7 +58,11 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ language, onComplete,
         (newScores.J >= 0 ? "J" : "P");
       
       const typeData = t.types[type];
-      onComplete(typeData.name, typeData.desc);
+      if (typeData) {
+        onComplete(type, typeData.desc);
+      } else {
+        onComplete(type, t.types?.INTJ?.desc || "");
+      }
     }
   };
 
@@ -101,7 +105,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ language, onComplete,
         </div>
 
         <div className="space-y-12">
-          <div className="flex items-center justify-between max-w-2xl mx-auto px-2 relative">
+          <div className="flex flex-wrap items-center justify-center md:justify-between gap-3 md:gap-0 max-w-2xl mx-auto px-4 sm:px-6 relative">
              <div className="absolute -top-8 left-0 text-[10px] font-black uppercase text-emerald-600 tracking-widest">{t.agree}</div>
              <div className="absolute -top-8 right-0 text-[10px] font-black uppercase text-purple-600 tracking-widest">{t.disagree}</div>
 
@@ -109,7 +113,7 @@ const PersonalityTest: React.FC<PersonalityTestProps> = ({ language, onComplete,
                 <button
                   key={idx}
                   onClick={() => setSelectedScore(opt.score)}
-                  className={`relative flex items-center justify-center rounded-full transition-all duration-300 ring-offset-4 ${opt.size} ${
+                  className={`relative flex items-center justify-center rounded-full transition-all duration-300 ring-offset-4 flex-shrink-0 ${opt.size} ${
                     selectedScore === opt.score 
                       ? `${opt.color} ring-4 ring-indigo-100 scale-110 shadow-lg` 
                       : `bg-slate-100 ${opt.hover} hover:ring-2 hover:bg-white`

@@ -1,10 +1,12 @@
 
 import React from 'react';
-import { Mood } from '../types';
+import { Mood, AppLanguage } from '../types';
+import { getTranslations } from '../translations';
 
 interface MoodSelectorProps {
   selectedMood: Mood | null;
   onSelect: (mood: Mood) => void;
+  language?: AppLanguage;
 }
 
 const moods = [
@@ -16,7 +18,8 @@ const moods = [
   { type: Mood.OVERWHELMED, emoji: '🤯' },
 ];
 
-const MoodSelector: React.FC<MoodSelectorProps> = ({ selectedMood, onSelect }) => {
+const MoodSelector: React.FC<MoodSelectorProps> = ({ selectedMood, onSelect, language = 'en' }) => {
+  const t = getTranslations(language);
   return (
     <div className="flex flex-wrap gap-3 justify-center md:justify-start">
       {moods.map((m) => (
@@ -30,7 +33,7 @@ const MoodSelector: React.FC<MoodSelectorProps> = ({ selectedMood, onSelect }) =
           }`}
         >
           <span className="text-3xl mb-1">{m.emoji}</span>
-          <span className="text-xs font-bold uppercase tracking-tight theme-text-main">{m.type}</span>
+          <span className="text-xs font-bold uppercase tracking-tight theme-text-main">{t.moods?.[m.type] || m.type}</span>
         </button>
       ))}
     </div>

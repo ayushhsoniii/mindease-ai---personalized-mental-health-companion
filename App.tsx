@@ -9,7 +9,7 @@ import PersonalityInsights from './components/PersonalityInsights';
 import ThemePage from './components/ThemePage';
 import MusicTherapy from './components/MusicTherapy';
 import { apiService } from './services/apiService';
-import { translations, languages } from './translations';
+import { getTranslations, languages } from './translations';
 import { HeartHandshake, LogOut, Palette, Globe, Database, Terminal, Server, X, ZapOff, ShieldCheck, Check } from 'lucide-react';
 
 
@@ -91,6 +91,7 @@ const App: React.FC = () => {
           syncUserData(next);
         }}
         initialStep={!userData.isAuthenticated ? 'login' : 'onboarding'}
+        language={userData.language || 'en'}
       />
     );
   }
@@ -99,8 +100,16 @@ const App: React.FC = () => {
     setUserData({ ...userData, language: lang });
     setShowLanguageMenu(false);
   };
-  const t = translations[userData.language];
+  const t = getTranslations(userData.language);
   const isDarkTheme = userData.theme.startsWith('dark');
+  const tabLabels: Record<typeof activeTab, string> = {
+    chat: t.talk,
+    tests: t.assessments,
+    insights: t.insights,
+    personality: t.personalityTab || t.personalityArchetype || 'Personality',
+    themes: t.themes,
+    music: t.music
+  };
 
 
   return (
@@ -121,28 +130,28 @@ const App: React.FC = () => {
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex gap-4">
                    <Database className={`w-5 h-5 shrink-0 ${ragStatus === 'ready' ? 'text-green-500' : 'text-orange-400'}`} />
                    <div>
-                      <p className="text-xs font-black uppercase text-slate-400 mb-1">Local Knowledge Base (RAG)</p>
+                      <p className="text-xs font-black uppercase text-slate-400 mb-1">{t.setupGuide.localKnowledgeTitle}</p>
                       <p className={`text-sm font-bold ${ragStatus === 'quota_exceeded' ? 'text-orange-500' : ragStatus === 'offline' ? 'text-slate-400' : 'text-slate-600'}`}>
-                        {ragStatus === 'quota_exceeded' ? 'Offline (Quota Limit Hit)' : ragStatus === 'ready' ? 'Online & Grounded' : ragStatus === 'offline' ? 'Host Not Found (localhost:8000)' : 'Connecting to Local API...'}
+                        {ragStatus === 'quota_exceeded' ? t.setupGuide.localKnowledgeQuota : ragStatus === 'ready' ? t.setupGuide.localKnowledgeReady : ragStatus === 'offline' ? t.setupGuide.localKnowledgeOffline : t.setupGuide.localKnowledgeConnecting}
                       </p>
                    </div>
                 </div>
                 <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex gap-4">
                    <ShieldCheck className="w-5 h-5 text-blue-500 shrink-0" />
                    <div>
-                      <p className="text-xs font-black uppercase text-blue-400 mb-1">Direct Cloud AI Status</p>
-                      <p className="text-sm font-bold text-blue-700">Always Online (Primary Inference)</p>
+                      <p className="text-xs font-black uppercase text-blue-400 mb-1">{t.setupGuide.cloudStatusTitle}</p>
+                      <p className="text-sm font-bold text-blue-700">{t.setupGuide.cloudStatusValue}</p>
                    </div>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex gap-4">
                    <Terminal className="w-5 h-5 text-indigo-500 shrink-0" />
                    <div>
-                      <p className="text-xs font-black uppercase text-slate-400 mb-1">Solving 429 Errors</p>
-                      <p className="text-xs text-slate-500 leading-relaxed">The 429 error means the Free Tier quota was reached. The app automatically switches to Direct Cloud Grounding until your quota resets (usually within 60 seconds).</p>
+                      <p className="text-xs font-black uppercase text-slate-400 mb-1">{t.setupGuide.quotaHelpTitle}</p>
+                      <p className="text-xs text-slate-500 leading-relaxed">{t.setupGuide.quotaHelpDesc}</p>
                    </div>
                 </div>
              </div>
-             <button onClick={() => setShowSetupGuide(false)} className="w-full py-4 bg-[var(--primary)] text-white rounded-2xl font-black shadow-lg">Back to Companion</button>
+             <button onClick={() => setShowSetupGuide(false)} className="w-full py-4 bg-[var(--primary)] text-white rounded-2xl font-black shadow-lg">{t.setupGuide.backToCompanion}</button>
           </div>
         </div>
       )}
@@ -163,7 +172,7 @@ const App: React.FC = () => {
             >
               {ragStatus === 'quota_exceeded' ? <ZapOff className="w-4 h-4 text-orange-500" /> : <Database className={`w-4 h-4 ${isBackendOnline ? 'text-green-500' : 'text-slate-300'}`} />}
               <span className={`text-[10px] font-black uppercase tracking-widest hidden sm:block ${ragStatus === 'quota_exceeded' ? 'text-orange-600' : 'text-slate-400'}`}>
-                {ragStatus === 'quota_exceeded' ? 'Quota Limit' : isBackendOnline ? 'System Synced' : 'Syncing...'}
+                {ragStatus === 'quota_exceeded' ? t.nav.quotaLimit : isBackendOnline ? t.nav.systemSynced : t.nav.syncing}
               </span>
             </button>
             
@@ -181,7 +190,7 @@ const App: React.FC = () => {
               {showLanguageMenu && (
                 <div className="absolute right-0 mt-3 w-64 bg-white rounded-[32px] shadow-2xl border border-slate-100 py-4 z-[60] animate-in slide-in-from-top-2 duration-200">
                   <div className="px-6 py-2 border-b border-slate-50 mb-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Select Language</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t.nav.selectLanguage}</p>
                   </div>
                   <div className="max-h-80 overflow-y-auto px-2">
                     {languages.map((lang) => (
@@ -229,7 +238,7 @@ const App: React.FC = () => {
                         : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
-                  {tab}
+                  {tabLabels[tab] || tab}
                 </button>
               ))}
             </div>
@@ -249,7 +258,7 @@ const App: React.FC = () => {
             )}
             {activeTab === 'insights' && <InsightsDashboard data={userData} onUpdateProfile={(p) => setUserData({...userData, profile: {...userData.profile!, ...p}})} language={userData.language} />}
             {activeTab === 'personality' && <PersonalityInsights profile={userData.profile} language={userData.language} onTakeTest={(type, desc) => setUserData({...userData, profile: {...userData.profile!, personalityType: type, personalityDescription: desc}})} />}
-            {activeTab === 'themes' && <ThemePage currentTheme={userData.theme} onThemeChange={(t) => setUserData({...userData, theme: t})} />}
+            {activeTab === 'themes' && <ThemePage currentTheme={userData.theme} onThemeChange={(t) => setUserData({...userData, theme: t})} language={userData.language} />}
             {activeTab === 'tests' && <AssessmentTest language={userData.language} onComplete={(r) => setUserData({...userData, testResults: [...userData.testResults, r]})} />}
             {activeTab === 'music' && (
               <MusicTherapy 
@@ -258,6 +267,7 @@ const App: React.FC = () => {
                 onLink={() => setUserData({...userData, spotifyLinked: true})}
                 onRefresh={(p) => setUserData({...userData, recommendedPlaylists: p})}
                 onVibeUpdate={(v) => setUserData({...userData, spotifyVibe: v})}
+                language={userData.language}
               />
             )}
           </div>
