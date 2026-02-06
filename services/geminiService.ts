@@ -23,6 +23,17 @@ const RESPONSE_STYLE_GUIDELINES: Record<ResponseStyle, string> = {
     "Calm, thoughtful, and Socratic. Mirror the user's feelings, invite self-reflection, and ask open-ended questions rather than prescribing.",
 };
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: "English",
+  hi: "Hindi",
+  ta: "Tamil",
+  te: "Telugu",
+  ml: "Malayalam",
+  kn: "Kannada",
+  mr: "Marathi",
+  bn: "Bengali",
+};
+
 export const geminiService = {
   async *streamChat(
     history: ChatMessage[],
@@ -35,8 +46,10 @@ export const geminiService = {
   ) {
     const ai = getAI();
     
+    const languageName = LANGUAGE_NAMES[language] || language || "English";
     const systemInstruction = `
       You are MindEase Companion, a world-class empathetic mental health support AI.
+      Respond in ${languageName} unless the user explicitly asks for another language.
       User Profile: ${profile ? JSON.stringify(profile) : 'Anonymous'}
       Current Mood: ${currentMood || 'Not specified'}
       Recent Test Results: ${JSON.stringify(testResults)}
@@ -87,9 +100,10 @@ export const geminiService = {
   async getPersonalityInsights(personalityType: string, language: string): Promise<PersonalityInsights> {
     const ai = getAI();
     try {
+      const languageName = LANGUAGE_NAMES[language] || language || "English";
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Provide deep personality insights for the ${personalityType} archetype in ${language}.`,
+        contents: `Provide deep personality insights for the ${personalityType} archetype in ${languageName}.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {

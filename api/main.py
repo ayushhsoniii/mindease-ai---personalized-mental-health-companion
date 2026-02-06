@@ -169,9 +169,26 @@ STYLE_GUIDELINES = {
     ),
 }
 
+LANGUAGE_NAMES = {
+    "en": "English",
+    "hi": "Hindi",
+    "ta": "Tamil",
+    "te": "Telugu",
+    "ml": "Malayalam",
+    "kn": "Kannada",
+    "mr": "Marathi",
+    "bn": "Bengali",
+}
+
 def _get_style_guidelines(style: Optional[str]) -> str:
     style_key = (style or "compassionate").strip().lower()
     return STYLE_GUIDELINES.get(style_key, STYLE_GUIDELINES["compassionate"])
+
+def _get_language_name(code: Optional[str]) -> str:
+    if not code:
+        return "English"
+    key = str(code).strip().lower()
+    return LANGUAGE_NAMES.get(key, key)
 
 def _load_pdf_documents() -> List[Document]:
     if not RAG_PDF_ENABLED:
@@ -327,9 +344,11 @@ async def chat_stream(request: Request):
             pass
 
     response_style = context.get("responseStyle", "compassionate")
+    language_name = _get_language_name(context.get("language"))
     style_guidelines = _get_style_guidelines(response_style)
     system_instruction = (
         "You are MindEase Companion, an empathetic mental health support AI. "
+        f"Respond in {language_name} unless the user explicitly asks for another language. "
         f"Response style: {response_style}. "
         f"Style guidelines: {style_guidelines} "
         f"Incorporate this psychological knowledge if relevant: {psych_context}"

@@ -1,24 +1,21 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Mood, ChatMessage, Resource, UserData, TestResult, UserProfile, AppTheme, SpotifyPlaylist, AppLanguage, ResponseStyle } from './types';
+import { Mood, UserData, TestResult, UserProfile, AppLanguage, ResponseStyle } from './types';
 import ChatWindow from './components/ChatWindow';
-import ResourceLibrary from './components/ResourceLibrary';
 import AssessmentTest from './components/AssessmentTest';
 import InsightsDashboard from './components/InsightsDashboard';
 import AuthPage from './components/AuthPage';
-import PersonalityTest from './components/PersonalityTest';
 import PersonalityInsights from './components/PersonalityInsights';
 import ThemePage from './components/ThemePage';
 import MusicTherapy from './components/MusicTherapy';
 import { apiService } from './services/apiService';
 import { translations, languages } from './translations';
-import { HeartHandshake, LogOut, Palette, Music, Globe, MessageSquare, ClipboardList, LayoutDashboard, Database, AlertCircle, Terminal, Info, Server, X, ZapOff, ShieldCheck, Check } from 'lucide-react';
+import { HeartHandshake, LogOut, Palette, Globe, Database, Terminal, Server, X, ZapOff, ShieldCheck, Check } from 'lucide-react';
 
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'chat' | 'tests' | 'insights' | 'personality' | 'themes' | 'music'>('chat');
   const [currentMood, setCurrentMood] = useState<Mood | null>(null);
-  const [resources, setResources] = useState<Resource[]>([]);
   const [isBackendOnline, setIsBackendOnline] = useState(false);
   const [ragStatus, setRagStatus] = useState<string>("initializing");
   const [showSetupGuide, setShowSetupGuide] = useState(false);
@@ -215,8 +212,8 @@ const App: React.FC = () => {
       </nav>
 
       <main className="max-w-7xl mx-auto px-6 pt-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 gap-10">
+          <div>
             <div className={`flex items-center gap-1 mb-6 p-1 backdrop-blur-sm rounded-2xl border w-fit ${
               isDarkTheme ? 'bg-white/10 border-white/10' : 'bg-white/50 border-white/40'
             }`}>
@@ -264,19 +261,6 @@ const App: React.FC = () => {
               />
             )}
           </div>
-          <aside className="space-y-6">
-             <div className="bg-[var(--primary)] p-8 rounded-[40px] text-white shadow-xl shadow-[var(--primary)]/20 relative overflow-hidden group">
-                <div className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
-                  <MessageSquare className="w-40 h-40" />
-                </div>
-                <h4 className="text-xl font-black mb-2 flex items-center gap-2">
-                   Live Coping Toolkit
-                   <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                </h4>
-                <p className="text-xs font-medium text-white/80 leading-relaxed mb-6">Resources update dynamically based on your current conversation and emotional needs.</p>
-                <ResourceLibrary resources={resources} />
-             </div>
-          </aside>
         </div>
       </main>
     </div>

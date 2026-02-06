@@ -275,7 +275,7 @@ try {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="How can I support you today?"
+            placeholder="Fir Se aa Gya Rona Dhona Karne?"
             className="w-full pl-8 pr-16 py-6 bg-[var(--bg-solid)] rounded-[32px] border-2 border-transparent focus:border-[var(--primary)] focus:bg-[var(--card-bg)] transition-all text-sm outline-none theme-text-main shadow-inner font-bold"
           />
           <button
