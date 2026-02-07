@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Mood, UserData, TestResult, UserProfile, AppLanguage, ResponseStyle } from './types';
+import { Mood, UserData, TestResult, UserProfile, AppLanguage, ResponseStyle, SpotifyPlaylist } from './types';
 import ChatWindow from './components/ChatWindow';
 import AssessmentTest from './components/AssessmentTest';
 import InsightsDashboard from './components/InsightsDashboard';
@@ -10,7 +10,7 @@ import ThemePage from './components/ThemePage';
 import MusicTherapy from './components/MusicTherapy';
 import { apiService } from './services/apiService';
 import { getTranslations, languages } from './translations';
-import { HeartHandshake, LogOut, Palette, Globe, Database, Terminal, Server, X, ZapOff, ShieldCheck, Check } from 'lucide-react';
+import { HeartHandshake, LogOut, Palette, Globe, Database, Terminal, Server, X, ZapOff, ShieldCheck, Check, Headphones, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 
 
 const App: React.FC = () => {
@@ -30,6 +30,12 @@ const App: React.FC = () => {
       recommendedPlaylists: []
     };
   });
+  const [pinnedPlaylist, setPinnedPlaylist] = useState<SpotifyPlaylist | null>(() => {
+    const saved = localStorage.getItem('mindease_pinned_playlist');
+    if (!saved) return null;
+    try { return JSON.parse(saved); } catch { return null; }
+  });
+  const [showPlayerBar, setShowPlayerBar] = useState(true);
 
   const languageMenuRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +54,14 @@ const App: React.FC = () => {
     localStorage.setItem('mindease_userdata', JSON.stringify(userData));
     document.documentElement.setAttribute('data-theme', userData.theme);
   }, [userData]);
+
+  useEffect(() => {
+    if (pinnedPlaylist) {
+      localStorage.setItem('mindease_pinned_playlist', JSON.stringify(pinnedPlaylist));
+    } else {
+      localStorage.removeItem('mindease_pinned_playlist');
+    }
+  }, [pinnedPlaylist]);
 
   // Handle clicking outside of language menu to close it
   useEffect(() => {
@@ -100,8 +114,20 @@ const App: React.FC = () => {
     setUserData({ ...userData, language: lang });
     setShowLanguageMenu(false);
   };
+  const handleSelectPlaylist = (playlist: SpotifyPlaylist) => {
+    setPinnedPlaylist(playlist);
+    setShowPlayerBar(true);
+  };
+  const getEmbedUrl = (uri?: string) => {
+    if (!uri) return '';
+    const clean = uri.split('?')[0];
+    if (clean.includes('open.spotify.com/')) return clean.replace('open.spotify.com/', 'open.spotify.com/embed/');
+    if (clean.startsWith('spotify:playlist:')) return `https://open.spotify.com/embed/playlist/${clean.split(':').pop()}`;
+    return '';
+  };
   const t = getTranslations(userData.language);
   const isDarkTheme = userData.theme.startsWith('dark');
+  const pinnedEmbedUrl = pinnedPlaylist ? getEmbedUrl(pinnedPlaylist.uri) : '';
   const tabLabels: Record<typeof activeTab, string> = {
     chat: t.talk,
     tests: t.assessments,
@@ -267,12 +293,72 @@ const App: React.FC = () => {
                 onLink={() => setUserData({...userData, spotifyLinked: true})}
                 onRefresh={(p) => setUserData({...userData, recommendedPlaylists: p})}
                 onVibeUpdate={(v) => setUserData({...userData, spotifyVibe: v})}
+                onSelectPlaylist={handleSelectPlaylist}
                 language={userData.language}
               />
             )}
           </div>
         </div>
       </main>
+
+      {pinnedEmbedUrl && (
+        <div className="fixed left-0 right-0 bottom-0 z-[60] px-3 pb-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl shadow-2xl px-4 py-3 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-[#1DB954]/10 text-[#1DB954] flex items-center justify-center">
+                    <Headphones className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#1DB954]">Now Playing</p>
+                    <p className="text-sm font-extrabold text-slate-800 truncate">
+                      {pinnedPlaylist?.title || 'Spotify playlist'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={pinnedPlaylist?.uri}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-[#1DB954] hover:bg-emerald-50 transition-all"
+                    title="Open in Spotify"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                  <button
+                    onClick={() => setShowPlayerBar(!showPlayerBar)}
+                    className="p-2 rounded-xl bg-slate-100 text-slate-500 hover:text-[#1DB954] hover:bg-emerald-50 transition-all"
+                    title={showPlayerBar ? 'Hide player' : 'Show player'}
+                  >
+                    {showPlayerBar ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                  </button>
+                  <button
+                    onClick={() => setPinnedPlaylist(null)}
+                    className="p-2 rounded-xl bg-slate-100 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                    title="Stop background music"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              {showPlayerBar && (
+                <div className="rounded-xl overflow-hidden border border-slate-100 shadow-inner">
+                  <iframe
+                    src={pinnedEmbedUrl}
+                    width="100%"
+                    height="92"
+                    frameBorder="0"
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    loading="lazy"
+                  ></iframe>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -13,8 +13,36 @@ interface MusicTherapyProps {
   onLink: () => void;
   onRefresh: (playlists: SpotifyPlaylist[]) => void;
   onVibeUpdate: (vibe: string) => void;
+  onSelectPlaylist: (playlist: SpotifyPlaylist) => void;
   language: AppLanguage;
 }
+
+const curatedPlaylists: SpotifyPlaylist[] = [
+  {
+    id: 'user-mindful-reset',
+    title: 'Mindful Reset',
+    uri: 'https://open.spotify.com/playlist/3awrQW1EBtxCody2D4dwg4',
+    description: 'Grounding, gentle tracks to slow your breath and ease tension.'
+  },
+  {
+    id: 'user-sunrise-focus',
+    title: 'Sunrise Focus',
+    uri: 'https://open.spotify.com/playlist/7fYEy2e7ceUjGfUwJCv9Wb',
+    description: 'Calm, clear textures for waking up and finding flow.'
+  },
+  {
+    id: 'user-steady-heart',
+    title: 'Steady Heart',
+    uri: 'https://open.spotify.com/playlist/5BmEuKRMhAZ6C08fscVtK9',
+    description: 'Piano-forward comfort when anxious or unsettled.'
+  },
+  {
+    id: 'user-bright-boost',
+    title: 'Bright Boost',
+    uri: 'https://open.spotify.com/playlist/0cELuDbnKCAK4rM0TwAFIM',
+    description: 'Light, uplifting picks to gently elevate mood.'
+  }
+];
 
 const MusicTherapy: React.FC<MusicTherapyProps> = ({ 
   currentMood, 
@@ -24,12 +52,35 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
   onLink,
   onRefresh,
   onVibeUpdate,
+  onSelectPlaylist,
   language
 }) => {
   const t = getTranslations(language);
   const [loading, setLoading] = useState(false);
   const [linking, setLinking] = useState(false);
   const [scanning, setScanning] = useState(false);
+
+  const normalizeUri = (uri: string) => uri.split('?')[0];
+
+  const blockedTitles = [
+    'whimsical wanderlust',
+    'creative flow beats',
+    'eclectic curiosities',
+    'soft sunny mornings'
+  ];
+
+  const filteredRecommended = recommendedPlaylists.filter(
+    (playlist) =>
+      playlist.uri &&
+      !blockedTitles.includes(playlist.title.toLowerCase())
+  );
+
+  const playlistsToRender: SpotifyPlaylist[] = [
+    ...curatedPlaylists,
+    ...filteredRecommended.filter(
+      (playlist) => !curatedPlaylists.some((curated) => normalizeUri(curated.uri) === normalizeUri(playlist.uri))
+    )
+  ];
 
   const handleLinkSpotify = () => {
     setLinking(true);
@@ -166,8 +217,12 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
               <p className="text-zinc-400 font-black uppercase tracking-[0.2em] text-xs">{t.musicPage.matchingSounds}</p>
            </div>
         ) : (
-          recommendedPlaylists.map((playlist) => {
-            const embedUrl = playlist.uri?.includes('open.spotify.com/') ? playlist.uri.replace('open.spotify.com/', 'open.spotify.com/embed/') : '';
+          playlistsToRender.map((playlist) => {
+            const embedUrl = playlist.uri?.includes('open.spotify.com/')
+              ? normalizeUri(playlist.uri).replace('open.spotify.com/', 'open.spotify.com/embed/')
+              : playlist.uri?.startsWith('spotify:playlist:')
+                ? `https://open.spotify.com/embed/playlist/${playlist.uri.split(':').pop()}`
+                : '';
             return (
               <div key={playlist.id} className="bg-white rounded-[48px] p-8 border border-slate-100 shadow-sm space-y-6 hover:shadow-xl transition-all group">
                 <div className="flex items-start justify-between">
@@ -177,6 +232,13 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
                     </div>
                     <h3 className="text-2xl font-black text-slate-800 group-hover:text-[var(--primary)] transition-colors">{playlist.title}</h3>
                     <p className="text-sm theme-text-muted font-medium italic">"{playlist.description}"</p>
+                    <button
+                      onClick={() => onSelectPlaylist(playlist)}
+                      className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-600 hover:border-[#1DB954] hover:text-[#1DB954] transition-all active:scale-95"
+                    >
+                      <Headphones className="w-3 h-3" />
+                      Play in background
+                    </button>
                   </div>
                   <a href={playlist.uri} target="_blank" rel="noreferrer" className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-[#1DB954] hover:text-white transition-all">
                     <ExternalLink className="w-5 h-5" />
