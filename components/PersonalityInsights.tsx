@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Sparkles, Brain, Briefcase, Heart, Shield, AlertCircle, Loader2, Zap, Target, ArrowRight, TrendingUp, Award } from 'lucide-react';
 import { UserProfile, PersonalityInsights as PersonalityInsightsData, TestResult, AppLanguage } from '../types';
-import { geminiService } from '../services/geminiService';
+import { apiService } from '../services/apiService';
 import { getTranslations } from '../translations';
 import PersonalityTest from './PersonalityTest';
 
@@ -39,7 +39,7 @@ const PersonalityInsights: React.FC<PersonalityInsightsProps> = ({ profile, test
     setLoading(true);
     setError(null);
     try {
-      const data = await geminiService.getPersonalityInsights(personalityTypeCode, language);
+      const data = await apiService.getPersonalityInsights(personalityTypeCode, language);
       setInsights(data);
     } catch (error) {
       console.error("Failed to fetch personality insights", error);

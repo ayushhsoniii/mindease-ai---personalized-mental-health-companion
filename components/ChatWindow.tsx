@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, User, Bot, Sparkles, Brain, ShieldCheck, Search, Database, Fingerprint, Heart, Target, Microscope, HelpCircle, ExternalLink, Zap, Cloud } from 'lucide-react';
 import { ChatMessage, Mood, UserProfile, AppLanguage, TestResult, ResponseStyle } from '../types';
-import { geminiService } from '../services/geminiService';
 import { apiService } from '../services/apiService';
 import { getTranslations } from '../translations';
 

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Music, Play, ExternalLink, RefreshCcw, Loader2, Music2, Headphones, Sparkles, CheckCircle2, Zap, Activity } from 'lucide-react';
 import { Mood, SpotifyPlaylist, UserProfile, AppLanguage } from '../types';
-import { geminiService } from '../services/geminiService';
+import { apiService } from '../services/apiService';
 import { getTranslations } from '../translations';
 
 interface MusicTherapyProps {
@@ -53,7 +53,7 @@ const MusicTherapy: React.FC<MusicTherapyProps> = ({
   const fetchPlaylists = async () => {
     setLoading(true);
     try {
-      const playlists = await geminiService.getMusicRecommendations(currentMood, profile, language);
+      const playlists = await apiService.getMusicRecommendations(currentMood, profile, language);
       onRefresh(playlists);
     } catch (err) {
       console.error(err);

@@ -13,9 +13,6 @@ import langchain_huggingface
 load_dotenv()
 
 
-print("DEBUG ENV KEY =", os.environ.get("GOOGLE_API_KEY"))
-
-
 
 # Set User-Agent at the very top to avoid warnings from loaders
 os.environ["USER_AGENT"] = "MindEaseCompanion/1.0"
@@ -150,6 +147,26 @@ def _ensure_text(value) -> str:
         return _ensure_text(content_attr)
     return str(value)
 
+def _extract_json_payload(text: str):
+    raw = _ensure_text(text)
+    obj_start = raw.find("{")
+    arr_start = raw.find("[")
+    if obj_start == -1 and arr_start == -1:
+        return None
+    if arr_start != -1 and (obj_start == -1 or arr_start < obj_start):
+        start = arr_start
+        end = raw.rfind("]")
+    else:
+        start = obj_start
+        end = raw.rfind("}")
+    if end == -1 or end <= start:
+        return None
+    snippet = raw[start:end + 1]
+    try:
+        return json.loads(snippet)
+    except Exception:
+        return None
+
 STYLE_GUIDELINES = {
     "compassionate": (
         "Warm, validating, and gentle. Use supportive language, acknowledge feelings, "
@@ -179,6 +196,15 @@ LANGUAGE_NAMES = {
     "mr": "Marathi",
     "bn": "Bengali",
 }
+
+class PersonalityInsightsRequest(BaseModel):
+    personalityType: str
+    language: Optional[str] = "en"
+
+class MusicRecommendationsRequest(BaseModel):
+    mood: Optional[str] = None
+    personalityType: Optional[str] = None
+    language: Optional[str] = "en"
 
 def _get_style_guidelines(style: Optional[str]) -> str:
     style_key = (style or "compassionate").strip().lower()
@@ -381,6 +407,49 @@ async def chat_stream(request: Request):
                 yield footer
 
     return StreamingResponse(event_generator(), media_type="text/plain")
+
+@app.post("/personality/insights")
+async def personality_insights(payload: PersonalityInsightsRequest):
+    if not GOOGLE_API_KEY:
+        raise HTTPException(status_code=503, detail="AI Model not initialized on backend.")
+    language_name = _get_language_name(payload.language)
+    prompt = (
+        "Return ONLY valid JSON with keys: summary (string), strengths (array of strings), "
+        "weaknesses (array of strings), career (string), relationships (string), copingAdvice (string). "
+        f"Provide deep personality insights for the {payload.personalityType} archetype in {language_name}."
+    )
+    try:
+        model = ChatGoogleGenerativeAI(model="gemini-3-flash-preview")
+        response = model.invoke(prompt)
+        data = _extract_json_payload(response)
+        if not isinstance(data, dict):
+            raise ValueError("Invalid JSON response")
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to generate insights: {e}")
+
+@app.post("/music/recommendations")
+async def music_recommendations(payload: MusicRecommendationsRequest):
+    if not GOOGLE_API_KEY:
+        raise HTTPException(status_code=503, detail="AI Model not initialized on backend.")
+    language_name = _get_language_name(payload.language)
+    mood = payload.mood or "neutral"
+    personality = payload.personalityType or "unknown"
+    prompt = (
+        "Return ONLY valid JSON array with 4 items. Each item must be an object with keys: "
+        "id (string), title (string), uri (string - Spotify open URL), description (string). "
+        f"Suggest 4 Spotify playlist themes for a person feeling {mood} with personality {personality}. "
+        f"Respond in {language_name}."
+    )
+    try:
+        model = ChatGoogleGenerativeAI(model="gemini-3-flash-preview")
+        response = model.invoke(prompt)
+        data = _extract_json_payload(response)
+        if not isinstance(data, list):
+            raise ValueError("Invalid JSON response")
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to generate recommendations: {e}")
 
 @app.post("/sync")
 async def sync_user_data(request: Request):

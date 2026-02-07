@@ -1,4 +1,4 @@
-import { ChatMessage, Mood, UserProfile, TestResult, Resource, SpotifyPlaylist, ResponseStyle, UserData, AppLanguage } from "../types";
+import { ChatMessage, Mood, UserProfile, TestResult, Resource, SpotifyPlaylist, ResponseStyle, UserData, AppLanguage, PersonalityInsights } from "../types";
 import { getTranslations } from "../translations";
 
 const API_BASE_URL = "http://localhost:8000";
@@ -100,6 +100,43 @@ export class ApiService {
       });
       return await response.json();
     } catch { return []; }
+  }
+
+  async getPersonalityInsights(personalityType: string, language: AppLanguage): Promise<PersonalityInsights> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/personality/insights`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ personalityType, language }),
+      });
+      if (!response.ok) throw new Error("Backend error");
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getMusicRecommendations(
+    mood: Mood | null,
+    profile: UserProfile | null,
+    language: AppLanguage
+  ): Promise<SpotifyPlaylist[]> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/music/recommendations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mood,
+          personalityType: profile?.personalityType || null,
+          language
+        }),
+      });
+      if (!response.ok) throw new Error("Backend error");
+      return await response.json();
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
   }
 }
 
